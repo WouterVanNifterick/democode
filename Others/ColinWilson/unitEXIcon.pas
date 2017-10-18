@@ -1267,8 +1267,7 @@ begin
                   // Read the icon images into their Memory streams
   for i := 0 to hdr.wCount - 1 do
   begin
-
-    stream.Seek (dirEntry [i].dwImageOffset, soFromBeginning);
+    Stream.Position := dirEntry[i].dwImageOffset;
 
     fImages [i].FMemoryImage.CopyFrom (stream, dirEntry [i].dwBytesInRes);
 
@@ -1427,11 +1426,11 @@ begin
     dirEntry.dwBytesInRes := image.FMemoryImage.Size;
     if hdr.wType = 2 then
     begin
-      image.FMemoryImage.Seek (SizeOf (DWORD), soFromBeginning);
+      image.FMemoryImage.Position := SizeOf (DWORD);
       Dec (dirEntry.dwBytesInRes, SizeOf (DWORD))
     end
     else
-      image.FMemoryImage.Seek (0, soFromBeginning);
+      image.FMemoryImage.Position := 0;
 
     dirEntry.dwImageOffset := dirSize;
     Stream.Write (dirEntry, SizeOf (dirEntry));
@@ -1940,7 +1939,7 @@ begin
     begin
       hotspot := MAKELONG (dirEntry [i].wPlanes, dirEntry [i].wBitCount);
 
-      stream.Seek (dirEntry [i].dwImageOffset, soFromBeginning);
+      stream.Position := dirEntry [i].dwImageOffset;
 
       fImages [i].FMemoryImage.Write (hotspot, SizeOf (hotspot));
       fImages [i].FMemoryImage.CopyFrom (stream, dirEntry [i].dwBytesInRes);
