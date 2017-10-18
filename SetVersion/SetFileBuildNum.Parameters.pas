@@ -14,9 +14,10 @@ type
     UpdateFileVersion,
     UpdateProductVersion: Boolean;
     DoSave:Boolean;
+    DoCreateBackup:Boolean;
     Quiet:Boolean;
     class function Init:TParameters; static;
-    procedure ShowUsage;
+    function GetUsageStr:string;
     procedure ParseFromCommandline;
     procedure Validate;
   end;
@@ -46,10 +47,7 @@ var i:integer;
 begin
   init;
   if ParamCount < 1 then
-  begin
-    ShowUsage;
-    Halt;
-  end;
+    raise EArgumentException.Create('No arguments given');
 
   for i := 1 to ParamCount do
   begin
@@ -67,9 +65,11 @@ begin
       'i': InputFile := val;
       'o': OutputFile := val;
       's': DoSave               := MyStrToBool(val);
+      'k': DoCreateBackup       := MyStrToBool(val);
       'p': UpdateProductVersion := MyStrToBool(val);
       'f': UpdateFileVersion    := MyStrToBool(val);
       'q': Quiet                := MyStrToBool(val);
+      '?': raise EArgumentException.Create('Showing help');
     end;
   end;
 
@@ -82,15 +82,32 @@ begin
   Validate;
 end;
 
-procedure TParameters.ShowUsage;
+function TParameters.GetUsageStr:string;
+var sb:TStringBuilder;
 begin
-  Writeln('');
-  Writeln('Usage: ', ExtractFileName(ParamStr(0)), ' <-i<filename>> [-vX.X.X.X] [-b<buildnum>] [-o<outputfile>]');
-  Writeln('');
-  Writeln('Example: ', ExtractFileName(ParamStr(0)), ' -ic:\dir\x.dll -b1234');
-  Writeln('Example: ', ExtractFileName(ParamStr(0)), ' -ic:\dir\x.dll -v2.3.6.78');
-  Writeln('Example: ', ExtractFileName(ParamStr(0)), ' -ic:\dir\x.dll -v2.3.6.78 -oc:\dir\o.dll' );
-  Writeln('');
+  sb := TStringBuilder.Create;
+  try
+    sb.AppendLine('Usage: ');
+    sb.AppendLine('  '+ ExtractFileName(ParamStr(0)) + ' <-i<filename>> [-vX.X.X.X] [-b<buildnum>] [-o<outputfile>]');
+    sb.AppendLine('');
+    sb.AppendLine('Options:');
+    sb.AppendLine('  -v: New version number   - x.x.x.x');
+    sb.AppendLine('  -b: New build number     - 0..65535');
+    sb.AppendLine('  -i: InputFile            - Path to EXE or DLL');
+    sb.AppendLine('  -o: OutputFile           - If not given, input file is overwritten');
+    sb.AppendLine('  -s: Save                 - default:yes');
+    sb.AppendLine('  -k: CreateBackup         - Create backup before writing');
+    sb.AppendLine('  -p: UpdateProductVersion - default:no');
+    sb.AppendLine('  -f: UpdateFileVersion    - default:yes');
+    sb.AppendLine('  -q: Quiet                - default:yes');
+    sb.AppendLine('');
+    sb.AppendLine('Example: '+ ExtractFileName(ParamStr(0))+ ' -ic:\dir\x.dll -b1234');
+    sb.AppendLine('Example: '+ ExtractFileName(ParamStr(0))+ ' -ic:\dir\x.dll -v2.3.6.78');
+    sb.AppendLine('Example: '+ ExtractFileName(ParamStr(0))+ ' -ic:\dir\x.dll -v2.3.6.78 -oc:\dir\o.dll -ptrue' );
+    Result := sb.ToString;
+  finally
+    sb.Free;
+  end;
 end;
 
 procedure TParameters.Validate;
