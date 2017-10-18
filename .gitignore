@@ -12,3 +12,9 @@
 *.drc
 # leave out Delphi 2009 project files, because they cause errors when trying to open in Delphi 2007
 *.dproj
+Others/ColinWilson/__history/
+SetVersion/__history/
+*.~dsk
+*.dsk
+*.~dll
+*.stat
