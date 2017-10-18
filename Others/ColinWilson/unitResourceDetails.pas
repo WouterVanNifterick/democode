@@ -66,7 +66,7 @@ public
   procedure SaveToStream (stream : TStream); virtual;
   procedure LoadFromStream (stream : TStream); virtual;
 
-  procedure SaveToFile (const FileName : string); virtual;
+  procedure SaveToFile (const AFileName : string; ACreateBackup:Boolean=true); virtual;
   procedure LoadFromFile (const FileName : string); virtual;
   procedure SortResources; virtual;
 
@@ -734,35 +734,44 @@ end;
  | Save to file.  This can be overriden but usually isn't as it         |
  | relies on SaveToStream, which must be.                               |
  *----------------------------------------------------------------------*)
-procedure TResourceModule.SaveToFile(const FileName: string);
+procedure TResourceModule.SaveToFile(const AFileName: string; ACreateBackup:Boolean);
+
+  function GetNewFileName(const _FileName:string):string;
+  var BackupNum:integer;
+  begin
+    // Create numbered backup, (from xxx.dll -> xxx~1.dll, xxx~2.dll, ...)
+    BackupNum := 1;
+    repeat
+      Result := ChangeFileExt(_FileName,'~'+BackupNum.ToString +ExtractFileExt(_FileName));
+    until not FileExists (Result);
+  end;
+
+var
+  LBackupFileName: string;
+
+  procedure SaveBackup;
+  begin
+    LBackupFileName := GetNewFileName(AFileName);
+    RenameFile (AFileName, LBackupFileName);
+  end;
+
+  procedure RestoreBackup;
+  begin
+    if ACreateBackup then
+    begin
+      if FileExists(AFileName) then
+        DeleteFile (AFileName);
+      RenameFile (LBackupFileName, AFileName);
+    end;
+  end;
 var
   s : TFileStream;
-  oldFileName, ext : string;
-  p : PChar;
 begin
-// Rename old file to .~ext'
-  oldFileName := FileName;
-  UniqueString (oldFileName);
-  p := StrRScan (PChar (oldFileName), '.');
-  if p <> Nil then
-  begin
-    p^ := #0;
-    Inc (p);
-    ext := p;
-    oldFileName := PChar (oldFileName);
-  end
-  else
-    ext := '';
-  ext := '~' + ext;
-  oldFileName := oldFileName + '.' + ext;
-
-  if FileExists (oldFileName) then
-    DeleteFile (oldFileName);
-
-  RenameFile (FileName, oldFileName);
+  if ACreateBackup then
+    SaveBackup;
 
   try
-    s := TFileStream.Create (FileName, fmCreate);
+    s := TFileStream.Create (AFileName, fmCreate);
     try
       SaveToStream (s);
       ClearDirty
@@ -770,9 +779,8 @@ begin
       s.Free
     end
   except
-// Failed.  Rename old file back.
-    DeleteFile (FileName);
-    RenameFile (oldFileName, FileName);
+    if ACreateBackup then
+      RestoreBackup;
     raise
   end
 end;
